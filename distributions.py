@@ -7,7 +7,6 @@ def get_sample(eta):
     return sum(alphas-betas)
 def run_test(eta1, eta2, iterations):
     q = {}
-    print(2**(2*(eta1+eta2)))
     for i in range(iterations):
         e1 = [get_sample(eta1) for i in range(0, 2**(2*(eta1+eta2)))]
         e2 = [get_sample(eta2) for i in range(0, 2**(2*(eta1+eta2)))]
@@ -42,17 +41,69 @@ def print_results(q, iterations):
     for i in range(min, max+1):
         if i in q.keys():
             print(i, q[i]/iterations)
+        
+
+def add_distributions(d1,d2):
+    q = {}
+    for i in d1.keys():
+        for j in d2.keys():
+            if i+j in q.keys():
+                q[i+j] += d1[i] * d2[j]
+            else:
+                q[i+j] = d1[i] * d2[j]
+    return q
+
+def multiply_distributions(d1,d2):
+    q = {}
+    for i in d1.keys():
+        for j in d2.keys():
+            if i*j in q.keys():
+                q[i*j] += d1[i] * d2[j]
+            else:
+                q[i*j] = d1[i] * d2[j]
+    return q
+
+#####################################################################################################################
+#####################################################################################################################
+#####################################################################################################################
+## Approach 1
+B2 = {-2:1, -1:4, 0:6, 1:4, 2:1}
+B2B2 = multiply_distributions(B2, B2)
+
+## for testing with eta_2 = 3 instead of eta_1 = eta_2 = 2
+# B3 = {-3:1, -2:6, -1:15, 0:20, 1:15, 2:6, 3:1}
 
 
+first_two_terms = add_distributions(B2B2, B2B2)
+N = add_distributions(first_two_terms, B2)
+total = sum(list(N.values()))
+print_results(N,total)
 
+#####################################################################################################################
+#####################################################################################################################
+#####################################################################################################################
+## Approach 2
+
+
+## number of iterations to run the tests
 iterations = 10
-test_2_3 = run_test(2,3, iterations)
-test_2_2 = run_test(2,2, iterations)
-expected_2_3, variance_2_3 = find_expected_and_variance(test_2_3) 
-expected_2_2, variance_2_2 = find_expected_and_variance(test_2_2) 
+
+eta = 2
+## for testing with eta_2 = 3 instead of eta_1 = eta_2 = 2
+# test_2_3 = run_test(2,3, iterations)
+# expected_2_3, variance_2_3 = find_expected_and_variance(test_2_3) 
+
+# samples_2 = [get_sample(eta) for i in range(0, iterations*2**(2*(eta)))]
+# test_2_2 = run_test(2,2, iterations)
+# expected_2_2, variance_2_2 = find_expected_and_variance(test_2_2) 
+# ## supposing that the terms are uncorrelated (since they are sampled)
 
 
-print_results(test_2_3, iterations)
-print("________________________")
-print_results(test_2_2, iterations)
+# expected = 2*expected_2_2 + expected_2
+# variance = variance_2_2 
+# print(f"The expected value of B2*B2 is {expected} and the variance is {variance}")
+
+
+
+
 
