@@ -1,25 +1,16 @@
-import numpy as np
+## approach 1
+from sage.all import parent, ZZ, vector, PolynomialRing, GF
+from sage.all import log, ceil, randint, set_random_seed, random_vector, matrix, floor
+import matplotlib.pyplot as plt
+import time
 
-def get_sample(eta):
-    alphas = np.random.randint(0,2,eta)
-    betas = np.random.randint(0,2,eta)
+def B(eta):
+    r = 0
+    for i in range(eta):
+        r += randint(0, 1) - randint(0, 1)
+    return r
 
-    return sum(alphas-betas)
-def run_test(eta1, eta2, iterations):
-    q = {}
-    for i in range(iterations):
-        e1 = [get_sample(eta1) for i in range(0, 2**(2*(eta1+eta2)))]
-        e2 = [get_sample(eta2) for i in range(0, 2**(2*(eta1+eta2)))]
-
-        e3 = [e1[i]*e2[i] for i in range(0,2**(2*(eta1+eta2)))]
-        for e in e3:
-            if e in q.keys():
-                q[e] += 1
-            else:
-                q[e] = 1
-    return q
-
-def find_expected_and_variance(q):
+def find_mean_variance(q):
     no_of_samples = sum(q.values())
     expected, variance = 0,0
     
@@ -30,80 +21,129 @@ def find_expected_and_variance(q):
         variance += (k-expected)**2*v / no_of_samples
     return expected, variance
 
-def print_results(q, iterations):
-    min = list(q.keys())[0]
-    max = list(q.keys())[0]
-    for k,_ in q.items():
-        if k < min:
-            min = k
-        if k > max:
-            max = k
-    for i in range(min, max+1):
-        if i in q.keys():
-            print(i, q[i]/iterations)
-        
 
-def add_distributions(d1,d2):
-    q = {}
-    for i in d1.keys():
-        for j in d2.keys():
-            if i+j in q.keys():
-                q[i+j] += d1[i] * d2[j]
-            else:
-                q[i+j] = d1[i] * d2[j]
-    return q
-
-def multiply_distributions(d1,d2):
-    q = {}
-    for i in d1.keys():
-        for j in d2.keys():
-            if i*j in q.keys():
-                q[i*j] += d1[i] * d2[j]
-            else:
-                q[i*j] = d1[i] * d2[j]
-    return q
-
-#####################################################################################################################
-#####################################################################################################################
-#####################################################################################################################
-## Approach 1
-B2 = {-2:1, -1:4, 0:6, 1:4, 2:1}
-B2B2 = multiply_distributions(B2, B2)
-
-## for testing with eta_2 = 3 instead of eta_1 = eta_2 = 2
-# B3 = {-3:1, -2:6, -1:15, 0:20, 1:15, 2:6, 3:1}
-
-
-first_two_terms = add_distributions(B2B2, B2B2)
-N = add_distributions(first_two_terms, B2)
-total = sum(list(N.values()))
-print_results(N,total)
-
-#####################################################################################################################
-#####################################################################################################################
-#####################################################################################################################
-## Approach 2
-
-
-## number of iterations to run the tests
-iterations = 10
-
+n = 256
+q = 3329
 eta = 2
-## for testing with eta_2 = 3 instead of eta_1 = eta_2 = 2
-# test_2_3 = run_test(2,3, iterations)
-# expected_2_3, variance_2_3 = find_expected_and_variance(test_2_3) 
+k = 3
+R, x = PolynomialRing(ZZ, "x").objgen()
+f = R([1]+[0]*(n-1)+[1])
+iterations_list =  [10, 100, 1000, 10000, 20000, 30000, 50000, 100000]
+print("Kyber768")
+for iterations in iterations_list:
+    vals = {}
+    start_time = time.time()
+    for _ in range (iterations):
+        N = 0
+        e = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        s = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        r  = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        e1 = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        e2 = R([(B(eta)) for _ in range(n)])
 
-# samples_2 = [get_sample(eta) for i in range(0, iterations*2**(2*(eta)))]
-# test_2_2 = run_test(2,2, iterations)
-# expected_2_2, variance_2_2 = find_expected_and_variance(test_2_2) 
-# ## supposing that the terms are uncorrelated (since they are sampled)
+        N = (e*r - s*e1 + e2 )% f
+        for nn in N:
+            if nn in vals.keys():
+                vals[nn] += 1
+            else:
+                vals[nn] = 1
 
+    minimum = min(vals)
+    maximum = max(vals)
+    x = []
+    y = []
+    total = sum(list(vals.values()))
+    for i in range(minimum, maximum+1):
+        if i in vals.keys():
+            x.append(i)
+            y.append(vals[i]/total)
+    print(iterations,n,total)
 
-# expected = 2*expected_2_2 + expected_2
-# variance = variance_2_2 
-# print(f"The expected value of B2*B2 is {expected} and the variance is {variance}")
+    plt.plot(x, y)
 
+    plt.xlabel("Outcome")
+    plt.ylabel("Probability")
+    plt.title("Distribution of N with "+str(iterations) +" trials ")
+    plt.show()
+    m, var = (find_mean_variance(vals))
+    print(f"Number of trials = {iterations}, Mean = {float(m)}, Variance = {float(var)}")
+###############################################################################################3
+k=4
+print("Kyber1024")
+for iterations in iterations_list:
+    vals = {}
+    start_time = time.time()
+    for _ in range (iterations):
+        N = 0
+        e = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        s = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        r  = vector(R, k, [R([(B(eta)) for _ in range(n)]) for _ in range(k)])
+        e1 = vector(R, k, [R([(B(eta)) for _B in range(n)]) for _ in range(k)])
+        e2 = R([(B(eta)) for _ in range(n)])
 
+        N = (e*r - s*e1 + e2 )% f
+        for nn in N:
+            if nn in vals.keys():
+                vals[nn] += 1
+            else:
+                vals[nn] = 1
 
+    minimum = min(vals)
+    maximum = max(vals)
+    x = []
+    y = []
+    total = sum(list(vals.values()))
+    for i in range(minimum, maximum+1):
+        if i in vals.keys():
+            x.append(i)
+            y.append(vals[i]/total)
+    print(iterations,n,total)
 
+    plt.plot(x, y)
 
+    plt.xlabel("Outcome")
+    plt.ylabel("Probability")
+    plt.title("Distribution of N with "+str(iterations) +" trials")
+    plt.show()
+    m, var = (find_mean_variance(vals))
+    print(f"Number of trials = {iterations}, Mean = {float(m)}, Variance = {float(var)}")
+##################################################################################################3
+k = 2
+print("Kyber512")
+for iterations in iterations_list:
+    start_time = time.time()
+    vals = {}
+    for _ in range (iterations):
+        N = 0
+        e = vector(R, k, [R([(B(3)) for _ in range(n)]) for _ in range(k)])
+        s = vector(R, k, [R([(B(3)) for _ in range(n)]) for _ in range(k)])
+        r  = vector(R, k, [R([(B(3)) for _ in range(n)]) for _ in range(k)])
+        e1 = vector(R, k, [R([(B(2)) for _ in range(n)]) for _ in range(k)])
+        e2 = R([(B(2)) for _ in range(n)])
+
+        N = (e*r - s*e1 + e2 )% f
+        for nn in N:
+            if nn in vals.keys():
+                vals[nn] += 1
+            else:
+                vals[nn] = 1
+
+    minimum = min(vals)
+    maximum = max(vals)
+    x = []
+    y = []
+    total = sum(list(vals.values()))
+    for i in range(minimum, maximum+1):
+        if i in vals.keys():
+            x.append(i)
+            y.append(vals[i]/total)
+    print(iterations,n,total)
+
+    plt.plot(x, y)
+
+    plt.xlabel("Outcome")
+    plt.ylabel("Probability")
+    plt.title("Distribution of N with "+str(iterations) +" trials")
+    plt.show()
+    m, var = (find_mean_variance(vals))
+    print(f"Number of trials = {iterations}, Mean = {float(m)}, Variance = {float(var)}")
